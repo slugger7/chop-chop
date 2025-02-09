@@ -38,10 +38,19 @@ app.get("/file", async (req, res) => {
   }
   const processedchunks = fileChunks.map(elem => {
     const elemSplit = elem.split('.')
-    const total = elem[elem.length - 1]
-    const index = elem[elem.length - 2]
-    return
+    const total = elemSplit[elemSplit.length - 1]
+    const index = elemSplit[elemSplit.length - 2]
+    return { name: elem, originalName: elemSplit.slice(0, -2).join("."), index, total }
   })
+    .sort((a, b) => {
+      return a.index - b.index
+    })
+
+  if (parseInt(processedchunks[0].total, 10) !== processedchunks.length) {
+    res.status(400).send("we do not have all chunks")
+  }
+
+  console.log(processedchunks)
   res.status(200).send()
 })
 

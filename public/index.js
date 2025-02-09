@@ -18,7 +18,7 @@ form.addEventListener("submit", async function (e) {
     for (let i = 0; i < totalChunks; i++) {
       console.log("Processing chunk", i * chunkSize)
       const chunk = new Blob([content.slice(i * chunkSize, (i + 1) * chunkSize)])
-      const fileChunk = new File([chunk], `${file.name}${i + 1}.${totalChunks}`)
+      const fileChunk = new File([chunk], `${file.name}.${i + 1}.${totalChunks}`)
 
       const data = new FormData()
       data.append("file", fileChunk)
