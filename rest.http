@@ -1,1 +1,1 @@
-GET http://localhost:3000/file?filename=text.txt
+GET http://localhost:3000/file?filename=txt
