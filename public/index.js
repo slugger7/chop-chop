@@ -7,39 +7,24 @@ form.addEventListener("submit", async function (e) {
 
   const file = input.files[0]
 
-  const reader = new FileReader()
-
-  reader.onload = async () => {
-    const chunkSize = 1000
-    const content = reader.result
-
-    console.log("Data size:", content.byteLength)
-    const totalChunks = Math.ceil(content.byteLength / chunkSize)
-    for (let i = 0; i < totalChunks; i++) {
-      console.log("Processing chunk", i * chunkSize)
-      const chunk = new Blob([content.slice(i * chunkSize, (i + 1) * chunkSize)])
-      const fileChunk = new File([chunk], `${file.name}.${i + 1}.${totalChunks}`)
-
-      const data = new FormData()
-      data.append("file", fileChunk)
-      await fetch("http://localhost:3000/file", {
-        method: "POST",
-        body: data
-      })
-    }
-    console.log("Done reading chunks")
-
-    await fetch(`http://localhost:3000/file?filename=${file.name}`, {
-      method: "GET"
+  const chunkSize = 99 * 1000 * 1000
+  const chunkCount = Math.ceil(file.size / chunkSize)
+  for (let i = 0; i < chunkCount; i++) {
+    const chunk = file.slice(i * chunkSize, i * chunkSize + chunkSize)
+    const fd = new FormData()
+    fd.set('data', chunk)
+    fd.set('filename', `${file.name}.${i}`)
+    await fetch("http://localhost:3000/file", {
+      method: "POST",
+      body: fd
     })
   }
-  reader.onerror = () => {
-    console.error("error reading file")
-  }
-  reader.readAsArrayBuffer(file)
 
-
+  await fetch(`http://localhost:3000/file?filename=${file.name}&chunks=${chunkCount}`, {
+    method: "GET"
+  })
 })
+
 
 const saveFile = (blob, filename) => {
   console.log("saving file", filename)
