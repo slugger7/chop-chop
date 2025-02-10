@@ -13,13 +13,14 @@ form.addEventListener("submit", async function (e) {
     const chunk = file.slice(i * chunkSize, i * chunkSize + chunkSize)
     const fd = new FormData()
     fd.set('data', chunk)
-    fd.set('filename', `${file.name}.${i}`)
+    fd.set('filename', `${file.name}.${i + 1}`)
     await fetch("http://localhost:3000/file", {
       method: "POST",
       body: fd
     })
   }
 
+  console.log({ name: file.name })
   await fetch(`http://localhost:3000/file?filename=${file.name}&chunks=${chunkCount}`, {
     method: "GET"
   })

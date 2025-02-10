@@ -1,13 +1,11 @@
 const express = require('express')
 const fileUpload = require('express-fileupload')
-const cors = require('cors')
 const bodyParser = require('body-parser')
-const { opendir, readFile, appendFile } = require("node:fs/promises")
-const { resolve } = require("node:path")
+const { opendir, appendFile, readFile, open, rm } = require("node:fs/promises")
+const { resolve } = require('node:path')
 const app = express()
 const port = 3000
 
-app.use(cors())
 app.use(express.static("public"))
 app.use(fileUpload())
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -31,9 +29,10 @@ app.post("/file", (req, res) => {
 })
 
 app.get("/file", async (req, res) => {
+  const workingDir = __dirname + `/uploads`
   const filename = req.query.filename
   const chunkCount = req.query.chunks
-  const dir = await opendir(__dirname + `/uploads`)
+  const dir = await opendir(workingDir)
 
   const fileChunks = []
   for await (const dirent of dir) {
@@ -44,7 +43,9 @@ app.get("/file", async (req, res) => {
   const processedchunks = fileChunks.map(elem => {
     const elemSplit = elem.split('.')
     const index = elemSplit[elemSplit.length - 1]
-    return { name: elem, originalName: elemSplit.slice(0, -1).join("."), index }
+    const obj = { name: elem, index }
+    console.log(obj)
+    return obj
   })
     .sort((a, b) => {
       return a.index - b.index
@@ -54,11 +55,16 @@ app.get("/file", async (req, res) => {
     res.status(400).send("we do not have all chunks")
   }
 
-  await Promise.all(processedchunks.map(async (c) => {
-    const filePath = resolve(`./uploads/${c.originalName}.${c.index}`)
-    const contents = await readFile(filePath)
-    await appendFile(resolve(`./uploads/${c.originalName}`), contents)
-  }))
+  await rm(`${workingDir}/${filename}`, { force: true })
+
+  for (const chunkIndex in processedchunks) {
+    const chunk = processedchunks[chunkIndex]
+    const filepath = `${workingDir}/${filename}.${chunk.index}`
+    const file = await open(filepath, 'r')
+    const rFile = await file.readFile()
+    await appendFile(`${workingDir}/${filename}`, rFile, { flush: true, flags: 'a' })
+  }
+
 
   console.log(processedchunks)
   res.status(200).send()
