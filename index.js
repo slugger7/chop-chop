@@ -1,7 +1,8 @@
 const express = require('express')
 const fileUpload = require('express-fileupload')
 const cors = require('cors')
-const { opendir } = require("node:fs/promises")
+const { opendir, readFile, appendFile } = require("node:fs/promises")
+const { resolve } = require("node:path")
 const app = express()
 const port = 3000
 
@@ -49,6 +50,12 @@ app.get("/file", async (req, res) => {
   if (parseInt(processedchunks[0].total, 10) !== processedchunks.length) {
     res.status(400).send("we do not have all chunks")
   }
+
+  await Promise.all(processedchunks.map(async (c) => {
+    const filePath = resolve(`./uploads/${c.originalName}.${c.index}.${c.total}`)
+    const contents = await readFile(filePath)
+    await appendFile(resolve(`./uploads/${c.originalName}`), contents)
+  }))
 
   console.log(processedchunks)
   res.status(200).send()
